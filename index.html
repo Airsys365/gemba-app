@@ -514,9 +514,12 @@
         photos = [];
         renderPhotos();
         
+        // Clear signature
+        clearSig();
+
         // Clear localStorage
         localStorage.removeItem(STORAGE_KEY);
-        
+
         console.log('New document started');
     }
 
