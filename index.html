@@ -884,28 +884,44 @@
 			}
 
 			
-			// Save with improved Android support
 			const pdfBytes = await doc.save();
+			const filename = `Gemba_Report_${area}_${reportDate}.pdf`;
 			const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+
+			const finish = () => {
+				btn.disabled = false;
+				loadingIndicator.style.display = 'none';
+			};
+
+			// Web Share API — works in Android WebView and mobile PWA
+			const file = new File([blob], filename, { type: 'application/pdf' });
+			if (navigator.canShare && navigator.canShare({ files: [file] })) {
+				try {
+					await navigator.share({ files: [file], title: filename });
+					finish();
+					return;
+				} catch (shareErr) {
+					if (shareErr.name !== 'AbortError') console.warn('Share failed, falling back to download', shareErr);
+					// AbortError = user cancelled share sheet — still fall through to download
+				}
+			}
+
+			// Desktop fallback — standard blob download
 			const url = URL.createObjectURL(blob);
-			
 			const link = document.createElement('a');
 			link.href = url;
-			link.download = `Gemba_Report_${area}_${reportDate}.pdf`;
+			link.download = filename;
 			link.style.display = 'none';
-			
 			document.body.appendChild(link);
-
 			pdfDownloading = true;
 			link.click();
-
 			setTimeout(() => {
 				pdfDownloading = false;
 				document.body.removeChild(link);
 				URL.revokeObjectURL(url);
-				btn.disabled = false;
-				loadingIndicator.style.display = 'none';
+				finish();
 				alert('PDF generated successfully!');
+			}, 500);
 			}, 500);
 
 		} catch(error) {
