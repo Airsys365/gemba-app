@@ -289,6 +289,7 @@
 
     let photos = [];
     let autosaveTimer = null;
+    let pdfDownloading = false;
 
     function init() {
 		initSignature();
@@ -343,7 +344,7 @@
         
         // Warn before leaving with unsaved changes
         window.addEventListener('beforeunload', (e) => {
-            if (hasUnsavedChanges()) {
+            if (!pdfDownloading && hasUnsavedChanges()) {
                 e.preventDefault();
                 e.returnValue = '';
             }
@@ -894,19 +895,12 @@
 			link.style.display = 'none';
 			
 			document.body.appendChild(link);
-			
-			// For Android use click event
+
+			pdfDownloading = true;
 			link.click();
-			
-			// Alternative method for some Android browsers
+
 			setTimeout(() => {
-				if (navigator.userAgent.match(/Android/i)) {
-					window.location.href = url;
-				}
-			}, 100);
-			
-			// Cleanup
-			setTimeout(() => {
+				pdfDownloading = false;
 				document.body.removeChild(link);
 				URL.revokeObjectURL(url);
 				btn.disabled = false;

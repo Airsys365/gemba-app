@@ -1,8 +1,0 @@
-{
-  "appId": "com.airsys365.gemba",
-  "appName": "Gemba Walk",
-  "webDir": "www",
-  "server": {
-    "androidScheme": "https"
-  }
-}
