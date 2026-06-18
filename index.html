@@ -893,44 +893,25 @@
 				loadingIndicator.style.display = 'none';
 			};
 
-			// Step 1: Web Share API with file (mobile browsers & modern WebView)
-			// Intentionally skip canShare() check — returns false in many WebViews even when share() works
-			if (navigator.share) {
-				try {
-					const file = new File([blob], filename, { type: 'application/pdf' });
-					await navigator.share({ files: [file], title: filename });
+			// data: URI download — the only method that reliably works when
+			// opening index.html as a local file (file://) in Chrome for Android.
+			// blob: URLs get a null origin on file:// and Chrome silently ignores download.
+			const reader = new FileReader();
+			reader.onload = () => {
+				const link = document.createElement('a');
+				link.href = reader.result;
+				link.download = filename;
+				link.style.display = 'none';
+				document.body.appendChild(link);
+				pdfDownloading = true;
+				link.click();
+				setTimeout(() => {
+					pdfDownloading = false;
+					document.body.removeChild(link);
 					finish();
-					return;
-				} catch (err) {
-					if (err.name === 'AbortError') { finish(); return; }
-					console.warn('navigator.share failed:', err.name, err.message);
-				}
-			}
-
-			// Step 2: Standard <a download> — works on desktop, fails silently in WebView
-			pdfDownloading = true;
-			const url = URL.createObjectURL(blob);
-			const link = document.createElement('a');
-			link.href = url;
-			link.download = filename;
-			link.style.display = 'none';
-			document.body.appendChild(link);
-			link.click();
-
-			// Step 3: If still on Android WebView — open blob in new tab as last resort
-			// User sees the PDF and can use the WebView toolbar share button
-			const isAndroid = /Android/i.test(navigator.userAgent);
-			setTimeout(() => {
-				pdfDownloading = false;
-				document.body.removeChild(link);
-				if (isAndroid) {
-					window.open(url, '_blank');
-				} else {
-					URL.revokeObjectURL(url);
-					alert('PDF generated successfully!');
-				}
-				finish();
-			}, 500);
+				}, 300);
+			};
+			reader.readAsDataURL(blob);
 
 		} catch(error) {
 			console.error('PDF generation error:', error);
