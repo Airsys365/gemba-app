@@ -893,34 +893,43 @@
 				loadingIndicator.style.display = 'none';
 			};
 
-			// Web Share API — works in Android WebView and mobile PWA
-			const file = new File([blob], filename, { type: 'application/pdf' });
-			if (navigator.canShare && navigator.canShare({ files: [file] })) {
+			// Step 1: Web Share API with file (mobile browsers & modern WebView)
+			// Intentionally skip canShare() check — returns false in many WebViews even when share() works
+			if (navigator.share) {
 				try {
+					const file = new File([blob], filename, { type: 'application/pdf' });
 					await navigator.share({ files: [file], title: filename });
 					finish();
 					return;
-				} catch (shareErr) {
-					if (shareErr.name !== 'AbortError') console.warn('Share failed, falling back to download', shareErr);
-					// AbortError = user cancelled share sheet — still fall through to download
+				} catch (err) {
+					if (err.name === 'AbortError') { finish(); return; }
+					console.warn('navigator.share failed:', err.name, err.message);
 				}
 			}
 
-			// Desktop fallback — standard blob download
+			// Step 2: Standard <a download> — works on desktop, fails silently in WebView
+			pdfDownloading = true;
 			const url = URL.createObjectURL(blob);
 			const link = document.createElement('a');
 			link.href = url;
 			link.download = filename;
 			link.style.display = 'none';
 			document.body.appendChild(link);
-			pdfDownloading = true;
 			link.click();
+
+			// Step 3: If still on Android WebView — open blob in new tab as last resort
+			// User sees the PDF and can use the WebView toolbar share button
+			const isAndroid = /Android/i.test(navigator.userAgent);
 			setTimeout(() => {
 				pdfDownloading = false;
 				document.body.removeChild(link);
-				URL.revokeObjectURL(url);
+				if (isAndroid) {
+					window.open(url, '_blank');
+				} else {
+					URL.revokeObjectURL(url);
+					alert('PDF generated successfully!');
+				}
 				finish();
-				alert('PDF generated successfully!');
 			}, 500);
 
 		} catch(error) {
