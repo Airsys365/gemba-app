@@ -128,10 +128,15 @@
         }
         .p-thumb { aspect-ratio: 1; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); position: relative; }
         .p-thumb img { width: 100%; height: 100%; object-fit: cover; }
-        .p-remove { 
-            position: absolute; top: 5px; right: 5px; background: var(--danger); 
-            color: white; border: none; border-radius: 50%; width: 24px; height: 24px; 
+        .p-remove {
+            position: absolute; top: 5px; right: 5px; background: var(--danger);
+            color: white; border: none; border-radius: 50%; width: 24px; height: 24px;
             cursor: pointer; font-weight: bold; font-size: 12px;
+        }
+        .p-num {
+            position: absolute; bottom: 5px; right: 5px; background: rgba(0,0,0,0.55);
+            color: white; border-radius: 4px; padding: 1px 5px; font-size: 11px;
+            font-weight: bold; pointer-events: none; line-height: 1.4;
         }
 
         .action-buttons {
@@ -571,6 +576,7 @@
             <div class="p-thumb">
                 <img src="${src}">
                 <button class="p-remove" onclick="removePhoto(${i})">×</button>
+                <span class="p-num">${i + 1}</span>
             </div>
         `).join('');
     }
@@ -814,13 +820,37 @@
 						const dims = img.scaleToFit(photoWidth, photoHeight);
 						const xPos = startX + col * (photoWidth + horizontalGap);
 						
-						page.drawImage(img, { 
-							x: xPos + (photoWidth - dims.width) / 2, 
-							y: y - dims.height, 
-							width: dims.width, 
-							height: dims.height 
+						const imgX = xPos + (photoWidth - dims.width) / 2;
+						const imgBottom = y - dims.height;
+						page.drawImage(img, {
+							x: imgX,
+							y: imgBottom,
+							width: dims.width,
+							height: dims.height
 						});
-						
+
+						// Номер фото в нижнем правом углу
+						const numText = String(i + 1);
+						const numSize = 9;
+						const badgePad = 3;
+						const badgeW = fontB.widthOfTextAtSize(numText, numSize) + badgePad * 2;
+						const badgeH = numSize + badgePad * 2;
+						page.drawRectangle({
+							x: imgX + dims.width - badgeW - 4,
+							y: imgBottom + 4,
+							width: badgeW,
+							height: badgeH,
+							color: rgb(0, 0, 0),
+							opacity: 0.55,
+						});
+						page.drawText(numText, {
+							x: imgX + dims.width - badgeW - 4 + badgePad,
+							y: imgBottom + 4 + badgePad,
+							size: numSize,
+							font: fontB,
+							color: rgb(1, 1, 1),
+						});
+
 						if (col === photosPerRow - 1 || i === photos.length - 1) {
 							if (col === photosPerRow - 1) y -= (photoHeight + verticalGap);
 						}
